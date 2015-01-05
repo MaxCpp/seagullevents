@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html><head>
+	<meta charset="utf-8">
+	<title>[+title+]</title>
+	[+css+]
+	<link rel="stylesheet" type="text/css" href="../assets/modules/seagulllibrary/css/jPicker-1.1.6.min.css" />
+</head>
+<body>
+	<div id="js-msg" class="msg [+msgType+]"><div class="msg__text">[+msg+]</div></div>
+	<span class="b-ver">[+ver+]</span>
+	<h1>[+title+]</h1>
+	<ul class="actionButtons" style="right: 0pt; top: 10px;">
+		<li><a href="#" onclick="postForm(); return false;"><img alt="icons_delete_document" src="/assets/modules/seagulllibrary/css/images/back.png" /> назад</a></li>
+		<li><a href="#" onclick="$('#f-config').submit(); return false;"><img src="media/style/MODxCarbon/images/icons/save.png" alt="icons_save" /> Сохранить</a></li>
+	</ul>
+
+	<form id="f-config" class="b-form" method="post">
+		[+config+]
+		<ul class="actionButtons" style="right: 0pt; top: 10px;">
+			<li><a href="#" onclick="postForm(); return false;"><img alt="icons_delete_document" src="/assets/modules/seagulllibrary/css/images/back.png" /> назад</a></li>
+			<li><a href="#" onclick="$('#f-config').submit(); return false;"><img src="media/style/MODxCarbon/images/icons/save.png" alt="icons_save" /> Сохранить</a></li>
+		</ul>
+	</form>
+	<a id="create-variable" style="margin:7px 0 0 10px; float:right" href="#" onclick="return false;">Добавить переменную</a>
+
+<!--	<ul class="actionButtons">
+		<li><a id="js-lang-add" href="#"><img src="media/style[+theme+]/images/icons/add.png" /> Добавить язык</a></li>
+		<li><a id="js-lang-del" href="#"><img alt="icons_delete_document" src="media/style/MODxCarbon/images/icons/delete.png" /> Удалить язык</a></li>
+	</ul>
+	<label>Псевдоним языка (2 буквы): <input id="js-lang-alias" /></label>
+	<label>Название языка: <input id="js-lang-name" /></label>
+	<select id="js-lang-select" size="3">
+		<option value="ru">Русская версия</option>
+		<option value="am" selected="selected">Армянская версия</option>
+		<option value="en">Английская версия</option>
+	</select>
+	<input id="js-lang-up" type="button" value="up" />
+	<input id="js-lang-down" type="button" value="down" />
+-->
+	<form name="module" method="post">
+		<input name="cmd" type="hidden" value="" />
+		<input name="itemID" type="hidden" value="" />
+	</form>
+	[+addvariable+]
+	[+js+]
+	<script type="text/javascript" src="../assets/modules/[+nameModule+]/js/[+nameModule+]_config.js"></script>
+</body>
+</html>
