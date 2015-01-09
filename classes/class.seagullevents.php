@@ -17,30 +17,32 @@ class CSeagullEvents extends CSeagullModule {
 	var $modx = null;
 	var $ph = array('ver'=>'0.0.4');
 	var $tables = array();
-	var $langs = array('am'=>'Армянская версия','ru'=>'Русская версия', 'en'=>'Английская версия');
+	var $langs = array('ru'=>'Русская версия', 'ua'=>'Украинская версия', 'en'=>'Английская версия');
 	var $nameMonth = array(1=>'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь');
 	var $nameDay = array(1=>'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс');
 	var $nameDayFull = array(1=>'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье');
 	var $lang_default = 'ru';
 	var $lang_cur = 'ru';
 	var $lang_cols = array();
-	public static $nameModule = 'seagullevents';
 	static $url = 'meropriyatiya/';
 	static $tableEvents = 'seagull_events';
 	static $GUID = '0ec522a9b70811ee6c993822551a1c0a';
-	const mailto = 'maxcpp@gmail.com';
+	const nameModule = 'seagullevents';
 
 	function __construct() { //----------------------------------------------
 		$args = func_get_args();
-		$this->msg = $args[0];
+		if (isset($args[0])) {
+			$this->msg = $args[0];
+		}
+		if (isset($args[1])) {
+			$this->modx = $args[1];
+		}
 
 		$this->config = new CConfig($this->msg);
-		$this->config->getVariables(self::$nameModule);
-		if (isset($args[1]))
-			$this->modx = $args[1];
+		$this->config->getVariables(self::nameModule);
 
 		$this->ph['title'] = 'Управление мероприятиями';
-		$this->ph['nameModule'] = self::$nameModule;
+		$this->ph['nameModule'] = self::nameModule;
 
 		$this->lang = array(
 			'title_add' => 'Добавление мероприятия',
@@ -109,10 +111,10 @@ class CSeagullEvents extends CSeagullModule {
 						'table_td_content'=>array('content_ru'=>array(0=>'<div class="b-false" title="Русская версия - ПУСТА"></div>', 1=>'<div class="b-true" title="Русская версия - ЗАПОЛНЕНА"></div>'))
 						);
 
-			$columns['am'] = array(
+			$columns['ua'] = array(
 						'non-exist'=>true,
-						'title'=>'AM',
-						'table_td_content'=>array('content_am'=>array(0=>'<div class="b-false" title="Армянская версия - ПУСТА"></div>', 1=>'<div class="b-true" title="Армянская версия - ЗАПОЛНЕНА"></div>'))
+						'title'=>'UA',
+						'table_td_content'=>array('content_ua'=>array(0=>'<div class="b-false" title="Украинская версия - ПУСТА"></div>', 1=>'<div class="b-true" title="Украинская версия - ЗАПОЛНЕНА"></div>'))
 						);
 
 			$columns['en'] = array(
@@ -165,7 +167,7 @@ class CSeagullEvents extends CSeagullModule {
 					);
 
 		$columns['date_update'] = array(
-					'title'=>'Дата обновления',
+					'title'=>'Обновление',
 					'form_hidden'=>true,
 					'form_fieldType'=>'date',
 					'form_mysql_mask'=>'FROM_UNIXTIME(`date_update`, "%d.%m.%Y %h:%i") `date_update`',
@@ -248,7 +250,7 @@ class CSeagullEvents extends CSeagullModule {
 			break;
 
 			case 'config':
-				$this->ph['config'] = $this->config->renderForm(self::$nameModule);
+				$this->ph['config'] = $this->config->renderForm(self::nameModule);
 				$this->file_tpl = 'config';
 			break;
 
@@ -281,7 +283,7 @@ class CSeagullEvents extends CSeagullModule {
 //	----------- TAGS -----------------------------
 				if ($this->config->allow_tags) {
 					$this->tags = new CSeagullTags($this->msg);
-					$aData['tags'] = $this->tags->saveTags($aData['tags'], $aData['itemID'], self::$nameModule);
+					$aData['tags'] = $this->tags->saveTags($aData['tags'], $aData['itemID'], self::nameModule);
 				}
 //	----------------------------------------------
 				$aData['date_published'] = empty($aData['date_published']) ? date('d.m.Y', mktime()) : $aData['date_published'];
@@ -305,7 +307,7 @@ class CSeagullEvents extends CSeagullModule {
 
 						if ($this->config->allow_tags) {
 							$this->tags = new CSeagullTags($this->msg);
-							$arr['tags'] = $this->tags->saveTags($aData['tags'], $eventID, self::$nameModule, 1);
+							$arr['tags'] = $this->tags->saveTags($aData['tags'], $eventID, self::nameModule, 1);
 						}
 
 						$this->tables['events']->updateRow($eventID, $arr);
@@ -456,8 +458,8 @@ class CSeagullEvents extends CSeagullModule {
 			require_once(SITE_ROOT.'/assets/modules/seagullcomments/classes/class.seagullcomments.php');
 
 			$this->comment = new CSeagullComments($this->msg, $this->modx);
-			$output .= $this->comment->renderComments($event['id'], self::$nameModule);
-			$output .= $this->comment->renderForm($event['id'], self::$nameModule);
+			$output .= $this->comment->renderComments($event['id'], self::nameModule);
+			$output .= $this->comment->renderForm($event['id'], self::nameModule);
 		}*/
 		return $output;
 	}
@@ -519,7 +521,7 @@ class CSeagullEvents extends CSeagullModule {
 
 //	----------- TAGS -----------------------------
 				if ($this->config->allow_tags) {
-					$item['tags'] = $this->tags->renderTags($item['id'], self::$nameModule, 'link');
+					$item['tags'] = $this->tags->renderTags($item['id'], self::nameModule, 'link');
 					$item['tags'] = $item['tags'] ? '<span class="event__tags">'.$item['tags'].'</span>' : '';
 				}
 
@@ -769,29 +771,29 @@ class CSeagullEvents extends CSeagullModule {
 
 		$r = true;
 		$this->config->install();
-		$this->config->addModule(self::$nameModule);
+		$this->config->addModule(self::nameModule);
 
-		$r &= (boolean)$this->config->setVariable('allow_comment', '0', self::$nameModule, NULL, 'C', 'Включить комментарии');
-		$r &= (boolean)$this->config->setVariable('allow_tags', '0', self::$nameModule, NULL, 'C', 'Включить тэги');
-		$r &= (boolean)$this->config->setVariable('countAdvEvents', '10', self::$nameModule, NULL, 'N', 'Кол-во статей в дополнительном списке внизу статьи');
+		$r &= (boolean)$this->config->setVariable('allow_comment', '0', self::nameModule, NULL, 'C', 'Включить комментарии');
+		$r &= (boolean)$this->config->setVariable('allow_tags', '0', self::nameModule, NULL, 'C', 'Включить тэги');
+		$r &= (boolean)$this->config->setVariable('countAdvEvents', '10', self::nameModule, NULL, 'N', 'Кол-во статей в дополнительном списке внизу статьи');
 		$arr = array(
 			array('name'=>'id','title'=>'ID статьи','val'=>1),
 			array('name'=>'date','title'=>'Дате публикации статьи','val'=>0),
 			array('name'=>'alias','title'=>'Псевдониму статьи (транслитерация заголовка)','val'=>0)
 		);
-		$r &= (boolean)$this->config->setVariable('identifyByURL', $arr, self::$nameModule, NULL, 'S', 'URL статьи строиться по', NULL, 'Будьте внимательны при смене этого поля, так как оно влияет на SEO');
+		$r &= (boolean)$this->config->setVariable('identifyByURL', $arr, self::nameModule, NULL, 'S', 'URL статьи строиться по', NULL, 'Будьте внимательны при смене этого поля, так как оно влияет на SEO');
 
-		$r &= (boolean)$this->config->setVariable('frontend', NULL, self::$nameModule, NULL, 'FIELDSET', 'Постраничная навигация на сайте');
-		$r &= (boolean)$this->config->setVariable('active', 1, self::$nameModule, 'frontend', 'C', 'Включить');
-		$r &= (boolean)$this->config->setVariable('rowsByPage', '15', self::$nameModule, 'frontend', 'N', 'Кол-во записей на странице', '50px');
-		$r &= (boolean)$this->config->setVariable('advLinks', '2', self::$nameModule, 'frontend', 'N', 'Кол-во ссылок на соседние страницы', '50px');
+		$r &= (boolean)$this->config->setVariable('frontend', NULL, self::nameModule, NULL, 'FIELDSET', 'Постраничная навигация на сайте');
+		$r &= (boolean)$this->config->setVariable('active', 1, self::nameModule, 'frontend', 'C', 'Включить');
+		$r &= (boolean)$this->config->setVariable('rowsByPage', '15', self::nameModule, 'frontend', 'N', 'Кол-во записей на странице', '50px');
+		$r &= (boolean)$this->config->setVariable('advLinks', '2', self::nameModule, 'frontend', 'N', 'Кол-во ссылок на соседние страницы', '50px');
 
-		$r &= (boolean)$this->config->setVariable('backend', NULL, self::$nameModule, NULL, 'FIELDSET', 'Настройки для админки');
-		$r &= (boolean)$this->config->setVariable('rowsByPage', '15', self::$nameModule, 'backend', 'N', 'Кол-во статей на странице', '50px');
-		$r &= (boolean)$this->config->setVariable('advLinks', '2', self::$nameModule, 'backend', 'N', 'Общее кол-во выводимых ссылок', '50px');
+		$r &= (boolean)$this->config->setVariable('backend', NULL, self::nameModule, NULL, 'FIELDSET', 'Настройки для админки');
+		$r &= (boolean)$this->config->setVariable('rowsByPage', '15', self::nameModule, 'backend', 'N', 'Кол-во статей на странице', '50px');
+		$r &= (boolean)$this->config->setVariable('advLinks', '2', self::nameModule, 'backend', 'N', 'Общее кол-во выводимых ссылок', '50px');
 
-		$r &= (boolean)$this->config->setVariable('multilang', NULL, self::$nameModule, NULL, 'FIELDSET', 'Мультиязычность');
-		$r &= (boolean)$this->config->setVariable('active', '0', self::$nameModule, 'multilang', 'C', 'Включить');
+		$r &= (boolean)$this->config->setVariable('multilang', NULL, self::nameModule, NULL, 'FIELDSET', 'Мультиязычность');
+		$r &= (boolean)$this->config->setVariable('active', '0', self::nameModule, 'multilang', 'C', 'Включить');
 
 		$r ? $this->msg->setOk('Переменные установлены') : $this->msg->setError('Ошибка при установки переменных');
 
