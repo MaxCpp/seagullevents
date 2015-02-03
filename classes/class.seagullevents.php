@@ -1,6 +1,8 @@
 <?php
 /*
-	Class SeagullEvents	0.0.6
+	Class SeagullEvents	0.0.7
+	Update 0.0.7: 2015-01-10
+		- add calendarList();
 	Update 0.0.6: 2014-11-28
 		- add calendar for year;
 	Update 0.0.5: 2014-11-28
@@ -15,7 +17,7 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/assets/modules/seagulltags/classes/clas
 
 class CSeagullEvents extends CSeagullModule {
 	var $modx = null;
-	var $ph = array('ver'=>'0.0.4');
+	var $ph = array('ver'=>'0.0.7');
 	var $tables = array();
 	var $langs = array('ru'=>'Русская версия', 'ua'=>'Украинская версия', 'en'=>'Английская версия');
 	var $nameMonth = array(1=>'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь');
@@ -355,7 +357,10 @@ class CSeagullEvents extends CSeagullModule {
 		return 0;
 	}
 
-	function handleSnippet($view=NULL, $count=NULL, $type=NULL, $lang=NULL) { //------------------------------------------------------
+	function handleSnippet($view=NULL, $count=NULL, $type=NULL, $lang=NULL, $year=NULL) { //------------------------------------------------------
+
+		$this->type = isset($type) ? $type : 'both';
+		$year = isset($year) ? (($year == 'current') ? date('Y') : $year) : date('Y');
 
 		switch ($view) {
 			case 'small':
@@ -365,11 +370,15 @@ class CSeagullEvents extends CSeagullModule {
 			break;
 
 			case 'calendar':
-				return $this->renderCalendar(date('Y'));
+				return $this->renderCalendar($year);
 			break;
 
 			case 'calendarMonth':
-				return $this->renderCalendar(date('Y'), date('m'));
+				return $this->renderCalendar($year, date('n'));
+			break;
+
+			case 'calendarList':
+				return $this->renderCalendarList($year);
 			break;
 
 			default:
@@ -485,12 +494,12 @@ class CSeagullEvents extends CSeagullModule {
 			} break;
 		}
 
-//		$url = $this->modx->makeURL($this->modx->documentIdentifier);
+		// $url = $this->modx->makeURL($this->modx->documentIdentifier);
 		$tpl = $this->getTpl('frontend/event_'.$view.'_row');
 		$tpl_without_date = $this->getTpl('frontend/event_'.$view.'_row_last');
 
 		if ($this->config->multilang->active and $this->lang_default !== $lang) {
-			$select = '`alias_'.$lang.'` as `alias`, `title_'.$lang.'` as `title`, `description_'.$lang.'` as `description`, `content_'.$lang.'` as `content`';
+			$select = '`alias_'.$lang.'` as `alias`, `title_'.$lang.'` as `title`, `description_'.$lang.'` as `description`, `content_'.$lang.'` as `content`, '.$url;
 			$table_i18n = ','.$this->tables['events']->table_i18n;
 			$where = '`id`=`event_id` AND';
 		}
@@ -507,8 +516,8 @@ class CSeagullEvents extends CSeagullModule {
 			// echo 'SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_published`>=$date_begin AND `date_published`<=$date_end ORDER BY `date_published` DESC LIMIT $count";
 		} else
 			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' ORDER BY `date_published` DESC LIMIT $count");
-//		echo 'SELECT '.$select.', `tags`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `type`='$type' AND `published`='1' ORDER BY `date_published` DESC LIMIT $count";
-//ea($arr);
+		// echo 'SELECT '.$select.', `tags`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `type`='$type' AND `published`='1' ORDER BY `date_published` DESC LIMIT $count";
+		// ea($arr);
 		if ($arr) {
 			if ($this->config->allow_tags) {
 				$this->tags = new CSeagullTags($this->msg);
@@ -517,9 +526,9 @@ class CSeagullEvents extends CSeagullModule {
 			foreach ($arr as $item) {
 				$item['url'] = '/'.self::$url.$item['url'];
 				$item['content'] = substr($item['content'], 0, strpos($item['content'], '<hr />'));
-//				$item['date'] = date2month($item['date']);
+				// $item['date'] = date2month($item['date']);
 
-//	----------- TAGS -----------------------------
+	// ----------- TAGS -----------------------------
 				if ($this->config->allow_tags) {
 					$item['tags'] = $this->tags->renderTags($item['id'], self::nameModule, 'link');
 					$item['tags'] = $item['tags'] ? '<span class="event__tags">'.$item['tags'].'</span>' : '';
@@ -587,30 +596,32 @@ class CSeagullEvents extends CSeagullModule {
 		return $output;
 	}
 
-	function renderCalendar($year = NULL, $month = NULL, $typeEvent = NULL, $neighbors = true) {
+	function renderCalendar($year = NULL, $month = NULL, $neighbors = true) {
 
 		$output = '';
 		// Рендер календаря на год
 		if (is_null($month)) {
 
 			for ($i = 1; $i <= 12; $i++) {
-				$output .= $this->renderCalendarMonth($year, $i, $typeEvent, $neighbors);
+				$output .= $this->renderCalendarMonth($year, $i, $neighbors);
 			}
-			$output = '<div class="calendar" data-year="'.$year.'"><h2>'.$year.'</h2>'.$output.'</div>';
+			$output = '<div class="calendar calendar-year" data-year="'.$year.'"><h2>'.$year.'</h2>'.$output.'</div>';
+			$calendarView = 0;
 		}
 		else {
-			$output = $this->renderCalendarMonth($year, $month, $typeEvent, $neighbors);
+			$output = '<div class="calendar" data-year="'.$year.'">'.$this->renderCalendarMonth($year, $month, $neighbors).'</div>';
+			$calendarView = $month;
 		}
 
 		if ($this->calendarData) {
 			$this->calendarData = json_encode($this->calendarData);
-			$output .= '<script type="text/javascript">calendarData='.$this->calendarData.';</script>';
+			$output .= '<script type="text/javascript">calendarData['.$calendarView.']='.$this->calendarData.';</script>';
 		}
 
 		return $output;
 	}
 
-	function renderCalendarMonth($year = NULL, $month = NULL, $typeEvent = NULL, $neighbors = true) { //-------------------------------------------------ion renderCalendar($month = NULL, $year = NULL, $type = NULL) { //-------------------------------------------------
+	function renderCalendarMonth($year = NULL, $month = NULL, $neighbors = true) { //-------------------------------------------------ion renderCalendar($month = NULL, $year = NULL, $type = NULL) { //-------------------------------------------------
 
 		$begin_published = mktime(0, 0, 0, $month, 1, $year);
 		$dayofmonth = date('t', $begin_published); // Вычисляем число дней в текущем месяце
@@ -623,12 +634,12 @@ class CSeagullEvents extends CSeagullModule {
 			$begin_published = mktime(0, 0, 0, $month, 1-$backDays, $year);
 		}
 
-		$where = is_null($typeEvent) ? '' : "AND `type`='$typeEvent'";
-		$where .= 'AND `date_published`>'.$begin_published.' AND `date_published`<'.$end_published;
+		$where = ($this->type === 'both') ? '' : ' AND `type`=\''.$this->type.'\'';
+		$where .= ' AND `date_published`>'.$begin_published.' AND `date_published`<'.$end_published;
 
 		// $arr = sql2array('SELECT `date_published`, FROM_UNIXTIME(`date_published`, "%d") `day`, FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url` FROM '.$this->tables['events']->table." WHERE `published`='1' $where GROUP BY `date_published` ORDER BY `date_published` DESC", 'day');
-		$aEvents = sql2table('SELECT `id`, `date_published`, `title`, FROM_UNIXTIME(`date_published`, "%d") `day`, FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url` FROM '.$this->tables['events']->table." WHERE `published`='1' $where ORDER BY `date_published` DESC");
-					// echo 'SELECT `date_published`, FROM_UNIXTIME(`date_published`, "%d") `day`, FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url` FROM '.$this->tables['events']->table." WHERE `published`='1' $where GROUP BY `date_published` ORDER BY `date_published` DESC";
+		$aEvents = sql2table('SELECT `id`, `date_published`, `title`, FROM_UNIXTIME(`date_published`, "%e") `day`, FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url` FROM '.$this->tables['events']->table." WHERE `published`='1' $where ORDER BY `date_published` DESC");
+					// echo 'SELECT `id`, `date_published`, `title`, FROM_UNIXTIME(`date_published`, "%d") `day`, FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url` FROM '.$this->tables['events']->table." WHERE `published`='1' $where ORDER BY `date_published` DESC";
 
 		$arr = array();
 
@@ -761,6 +772,116 @@ class CSeagullEvents extends CSeagullModule {
 		return $output;
 	}
 
+	function renderCalendarList($yaer=NULL) { //----------------------------------------------
+
+		$year = isset($year) ? $year : date('Y');
+		$count = isset($count) ? $count : 10;
+		$output = '';
+
+		switch ($this->config->identifyByURL) {
+			case 'id': {
+				$url = '`id` as `url`';
+			} break;
+
+			case 'date': {
+				$url = 'FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url`';
+			} break;
+
+			case 'alias': {
+				$url = (!$this->config->multilang->active and $this->lang_default === $lang) ? '`alias` as `url`' : '`alias_'.$lang.'` as `url`';
+			} break;
+		}
+
+//		$url = $this->modx->makeURL($this->modx->documentIdentifier);
+		// $tpl = $this->getTpl('frontend/event_'.$view.'_row');
+		$tpl_year = $this->getTpl('frontend/calendar-list_year');
+		$tpl_month = $this->getTpl('frontend/calendar-list_month');
+		$tpl_event = $this->getTpl('frontend/calendar-list_event');
+
+		if ($this->config->multilang->active and $this->lang_default !== $lang) {
+			$select = '`alias_'.$lang.'` as `alias`, `title_'.$lang.'` as `title`, `description_'.$lang.'` as `description`, `content_'.$lang.'` as `content`';
+			$table_i18n = ','.$this->tables['events']->table_i18n;
+			$where = '`id`=`event_id` AND';
+		}
+		else {
+			$select = '`title`, `description`, `content`, '.$url;
+			$table_i18n = $where = '';
+		}
+		$where .= ($this->type === 'both') ? '' : '`type`=\''.$this->type.'\' AND ';
+
+		$begin_published = mktime(0, 0, 0, 1, 1, $year);
+		$end_published = mktime(23, 59, 59, 12, 31, $year);
+
+		$where .= '`date_published`>'.$begin_published.' AND `date_published`<'.$end_published.' AND ';
+
+
+		if (isset($date)) {
+			$date_begin = mktime(0,0,0, $date['month'], $date['day'], $date['year']);
+			$date_end = $date_begin + 86400;
+			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_published`>=$date_begin AND `date_published`<=$date_end ORDER BY `date_published` DESC LIMIT $count");
+			// echo 'SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_published`>=$date_begin AND `date_published`<=$date_end ORDER BY `date_published` DESC LIMIT $count";
+		} else {
+			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_published`, "%Y") `year`, FROM_UNIXTIME(`date_published`, "%c") `month`, FROM_UNIXTIME(`date_published`, "%e") `day` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' ORDER BY `year`, `month`, `date_published` LIMIT $count");
+		}
+
+		if ($arr) {
+			if ($this->config->allow_tags) {
+				$this->tags = new CSeagullTags($this->msg);
+			}
+
+			$current_year = 0;
+			$current_month = 0;
+			$events = '';
+
+			$c = count($arr)-1;
+
+			foreach ($arr as $key => $item) {
+				$item['url'] = '/'.self::$url.$item['url'];
+				$item['content'] = substr($item['content'], 0, strpos($item['content'], '<hr />'));
+//				$item['date'] = date2month($item['date']);
+
+//	----------- TAGS -----------------------------
+				if ($this->config->allow_tags) {
+					$item['tags'] = $this->tags->renderTags($item['id'], self::nameModule, 'link');
+					$item['tags'] = $item['tags'] ? '<span class="event__tags">'.$item['tags'].'</span>' : '';
+				}
+
+				if ($current_year !== $item['year']) {
+					$current_year = $item['year'];
+					if (!empty($events)) {
+						$output .= '<div class="calendar-list-events">'.$events.'</div>';
+						$events = '';
+					}
+					$output .= $this->parseContent($tpl_year, $item);
+				}
+
+				if ($current_month !== $item['month']) {
+					$current_month = $item['month'];
+					$item['month'] = $this->nameMonth[$item['month']];
+					if (!empty($events)) {
+						$output .= '<div class="calendar-list-events">'.$events.'</div>';
+						$events = '';
+					}
+					$output .= $this->parseContent($tpl_month, $item);
+				} else {
+					$item['month'] = $this->nameMonth[$item['month']];
+				}
+
+				$events .= $this->parseContent($tpl_event, $item);
+
+				if ($c == $key) {
+					if (!empty($events)) {
+						$output .= '<div class="calendar-list-events">'.$events.'</div>';
+						$events = '';
+					}
+				}
+			}
+		}
+		else
+			$output = '<p style="text-align:center">Ближайшие даты тренингов уточняются</p>';
+
+		return $output;
+	}
 
 	function getEventByDay($date) {
 
