@@ -8,8 +8,8 @@ $(document).ready(function() {
 
 	$('.ckeditor').ckeditor();
 
-	$('.b-datepicker').datepicker({dateFormat: 'dd.mm.yy'});
-//	$('.b-timepicker').timepicker({timeFormat: 'h:m'});
+	$('.b-datepicker').datepicker({dateFormat: 'dd.mm.yy', firstDay:1});
+	$('.b-timepicker').timepicker({timeFormat: 'hh:mm'});
 
 //	Save event
 	$('#f-event').ajaxForm({url:ajaxurl, dataType:'json',
