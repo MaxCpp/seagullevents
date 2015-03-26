@@ -75,6 +75,14 @@ class CSeagullEvents extends CSeagullModule {
 					'table_title_hidden'=>true
 					);
 
+		$columns['special'] =	array(
+					'title'=>'Опубликовать на главной',
+					'form_fieldType'=>'checkbox',
+					'table_td_content'=>array('special'=>array(0=>'<div class="b-unpublished" title="Скрыт"></div>', 1=>'<div class="b-published" title="Опубликован на главной"></div>')),
+					'table_theadParam'=>'style="width:20px"',
+					'table_title_hidden'=>true
+					);
+
 		$columns['type'] = array(
 					'title'=>'Тип новости',
 					'form_fieldType'=>'radio',
@@ -224,7 +232,7 @@ class CSeagullEvents extends CSeagullModule {
 			}
 		}
 		$this->tables['events'] = new CEditTable(self::$tableEvents, $columns);
-		$this->tables['events']->setConfig('table_mysql_select', '`id`, `published`, `title`, '.$select_i18n.' FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end`, DATE_FORMAT(`time_begin`, "%H:%i") `time_begin`, DATE_FORMAT(`time_end`, "%H:%i") `time_end`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date_published`, FROM_UNIXTIME(`date_update`, "%d.%m.%Y %H:%i") `date_update`');
+		$this->tables['events']->setConfig('table_mysql_select', '`id`, `published`, `special`, `title`, '.$select_i18n.' FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end`, DATE_FORMAT(`time_begin`, "%H:%i") `time_begin`, DATE_FORMAT(`time_end`, "%H:%i") `time_end`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date_published`, FROM_UNIXTIME(`date_update`, "%d.%m.%Y %H:%i") `date_update`');
 		$this->tables['events']->setConfig('table_param', 'id="t-events" class="b-table tpaginator" cellpadding="0" cellspacing="0"');
 		$this->tables['events']->setConfig('tr_param', array('id'=>' id="row%id%" class="row-edit"'));
 		$this->tables['events']->setConfig('multilang', $this->config->multilang->active);
@@ -332,8 +340,10 @@ class CSeagullEvents extends CSeagullModule {
 					$this->msg->setError($this->lang['error_when_editing']);
 			}
 			else {
-				$aData['date_published'] = empty($aData['date_published']) ? date('d.m.Y', time()) : $aData['date_published'];
-				$aData['date_update'] = time();
+				$aData['date_begin'] = empty($aData['date_begin']) ? date('d.m.Y', time()) : $aData['date_begin'];
+				$aData['date_end'] = empty($aData['date_end']) ? '' : $aData['date_end'];
+
+				$aData['date_update'] = $aData['date_published'] = time();
 				$eventID = $this->tables['events']->saveForm($aData['itemID'], $aData);
 
 				if ($eventID) {
@@ -372,27 +382,28 @@ class CSeagullEvents extends CSeagullModule {
 		if (is_array($param)) {
 
 			$date = mktime(0, 0, 0, $param[2], $param[3], $param[1]);
-//echo 'SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_published`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table.' WHERE '.$date.'<`date_published` AND `date_published`<'.($date+86400);
-			$event = retr_sql('SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_published`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table.' WHERE '.$date.'<`date_published` AND `date_published`<'.($date+86400));
+//echo 'SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_begin`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table.' WHERE '.$date.'<`date_begin` AND `date_begin`<'.($date+86400);
+			$event = retr_sql('SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_begin`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table.' WHERE '.$date.'<`date_begin` AND `date_begin`<'.($date+86400));
 			if ($event)
 				return $event;
 		}
 		elseif (is_numeric($param)) {
-			$event = retr_sql('SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_published`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table." WHERE `id`='$param'");
+			$event = retr_sql('SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_begin`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table." WHERE `id`='$param'");
 			if ($event)
 				return $event;
 		}
 		elseif (is_string($param)) {
-			$event = retr_sql('SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_published`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table." WHERE `alias`='$param'");
+			$event = retr_sql('SELECT `id`, `title`, `content`, `author`, `alias`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_begin`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table." WHERE `alias`='$param'");
 			if ($event)
 				return $event;
 		}
 		return 0;
 	}
 
-	function handleSnippet($view=NULL, $count=NULL, $type=NULL, $lang=NULL, $year=NULL) { //------------------------------------------------------
+	function handleSnippet($view=NULL, $count=NULL, $type=NULL, $lang=NULL, $year=NULL, $special=NULL) { //------------------------------------------------------
 
 		$this->type = isset($type) ? $type : 'both';
+		$this->special = isset($special) ? $special : 0;
 		$year = isset($year) ? (($year == 'current') ? date('Y') : $year) : date('Y');
 
 		switch ($view) {
@@ -477,7 +488,7 @@ class CSeagullEvents extends CSeagullModule {
 		if ($count) {
 			switch ($view) {
 				case 'medium':
-					$arr = sql2table('SELECT `title`, `description`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_published`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table." WHERE `type`='$type' ORDER BY `date_published` DESC LIMIT $count");
+					$arr = sql2table('SELECT `title`, `description`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date`, FROM_UNIXTIME(`date_begin`, "%Y-%m-%d") `url` FROM '.$this->tables['events']->table." WHERE `type`='$type' ORDER BY `date_begin` DESC LIMIT $count");
 					$output .= '<div class="event-medium-list">';
 					foreach ($arr as $item) {
 						$output .= '<div class="event-medium"><span class="event-medium__date">'.$item['date'].'</span><a href="'.self::$url.$item['url'].'" class="event-medium__title">'.$item['title'].'</a><div class="event-medium__desc">'.$item['description'].'</div></div>';
@@ -486,7 +497,7 @@ class CSeagullEvents extends CSeagullModule {
 				break;
 
 				case 'large':
-					$arr = sql2table('SELECT `title`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date`, `content` FROM '.$this->tables['events']->table." WHERE `type`='$type' ORDER BY `date_published` DESC LIMIT $count");
+					$arr = sql2table('SELECT `title`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date`, `content` FROM '.$this->tables['events']->table." WHERE `type`='$type' ORDER BY `date_begin` DESC LIMIT $count");
 					$output .= '<ul class="event-list">';
 					foreach ($arr as $item) {
 						$output .= '<li class="event"><span class="event__date">'.$item['date'].'</span><h3 class="event__title">'.$item['title'].'</h3><div class="event__desc">'.$item['description'].'</div></li>';
@@ -519,7 +530,7 @@ class CSeagullEvents extends CSeagullModule {
 			} break;
 
 			case 'date': {
-				$url = 'FROM_UNIXTIME(`date_published`, "%Y/%m/%d") `url`';
+				$url = 'FROM_UNIXTIME(`date_begin`, "%Y/%m/%d") `url`';
 			} break;
 
 			case 'alias': {
@@ -541,15 +552,16 @@ class CSeagullEvents extends CSeagullModule {
 			$table_i18n = $where = '';
 		}
 		$where .= is_null($type) ? '' : "`type`='$type' AND ";
+		$where .= $this->special ? "`special`='1' AND " : '';
 
 		if (isset($date)) {
 			$date_begin = mktime(0,0,0, $date['month'], $date['day'], $date['year']);
 			$date_end = $date_begin+86400;
-			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_published`>=$date_begin AND `date_published`<=$date_end ORDER BY `date_published` DESC LIMIT $count");
-			// echo 'SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_published`>=$date_begin AND `date_published`<=$date_end ORDER BY `date_published` DESC LIMIT $count";
+			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_begin`>=$date_begin AND `date_begin`<=$date_end ORDER BY `date_begin` DESC LIMIT $count");
+			// echo 'SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_begin`>=$date_begin AND `date_begin`<=$date_end ORDER BY `date_begin` DESC LIMIT $count";
 		} else
-			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' ORDER BY `date_published` DESC LIMIT $count");
-		// echo 'SELECT '.$select.', `tags`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `type`='$type' AND `published`='1' ORDER BY `date_published` DESC LIMIT $count";
+			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' ORDER BY `date_begin` DESC LIMIT $count");
+		// echo 'SELECT '.$select.', `tags`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `type`='$type' AND `published`='1' ORDER BY `date_begin` DESC LIMIT $count";
 		// ea($arr);
 		if ($arr) {
 			if ($this->config->allow_tags) {
@@ -559,7 +571,15 @@ class CSeagullEvents extends CSeagullModule {
 			foreach ($arr as $item) {
 				$item['url'] = '/'.self::$url.$item['url'];
 				$item['content'] = substr($item['content'], 0, strpos($item['content'], '<hr />'));
-				// $item['date'] = date2month($item['date']);
+				// $item['date'] = date('j', $item['date_begin']).' '.date('m', $item['date_begin']).' '.date('Y', $item['date_begin']);
+				// if ($item['date_end'])
+				// 	$item['date'] .= ' - '.date('j', $item['date_end']).' '.date('m', $item['date_end']).' '.date('Y', $item['date_end']);
+				$item['date'] = date2format($item['date_begin'], 'd m');
+				// $item['date'] = $item['date_begin'];
+				if ($item['date_end'])
+					$item['date'] .= ' - '.date2format($item['date_end'], 'd m');
+
+				$item['date'] .= date2format($item['date_begin'], ' Y');
 
 	// ----------- TAGS -----------------------------
 				if ($this->config->allow_tags) {
@@ -583,7 +603,7 @@ class CSeagullEvents extends CSeagullModule {
 		$output = '';
 
 		if ($strIDs) {
-			$arr = sql2table('SELECT `id`, `title`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` '.$url.' FROM '.self::$tableEvents." WHERE `id` IN ($strIDs) ORDER BY `date_published` DESC");
+			$arr = sql2table('SELECT `id`, `title`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date` '.$url.' FROM '.self::$tableEvents." WHERE `id` IN ($strIDs) ORDER BY `date_begin` DESC");
 
 			if ($arr) {
 				$module = retr_sql('SELECT `id`, `name` FROM `'.$tempmodx->dbConfig['table_prefix'].'site_modules` WHERE `GUID`=\''.self::$GUID.'\'');
@@ -607,7 +627,7 @@ class CSeagullEvents extends CSeagullModule {
 				} break;
 
 				case 'date': {
-					$url = ', FROM_UNIXTIME(`date_published`, "%Y-%m-%d") `url`';
+					$url = ', FROM_UNIXTIME(`date_begin`, "%Y-%m-%d") `url`';
 				} break;
 
 				case 'alias': {
@@ -615,7 +635,7 @@ class CSeagullEvents extends CSeagullModule {
 				} break;
 			}
 
-			$arr = sql2table('SELECT `id`, `title`, FROM_UNIXTIME(`date_published`, "%d.%m.%Y") `date` '.$url.' FROM '.self::$tableEvents." WHERE `id` IN ($strIDs) ORDER BY `date_published` DESC");
+			$arr = sql2table('SELECT `id`, `title`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date` '.$url.' FROM '.self::$tableEvents." WHERE `id` IN ($strIDs) ORDER BY `date_begin` DESC");
 
 			if ($arr) {
 				$module = retr_sql('SELECT `id`, `name` FROM `'.$this->modx->dbConfig['table_prefix'].'site_modules` WHERE `GUID`=\''.self::$GUID.'\'');
