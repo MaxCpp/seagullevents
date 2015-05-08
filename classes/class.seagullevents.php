@@ -1,6 +1,8 @@
 <?php
 /*
-	Class SeagullEvents	0.0.8
+	Class SeagullEvents	0.0.9
+	Update 0.0.9: 2015-05-09
+		- add field "link";
 	Update 0.0.8: 2015-03-20
 		- add range date;
 	Update 0.0.7: 2015-01-10
@@ -19,7 +21,7 @@ require_once($_SERVER['DOCUMENT_ROOT'].'/assets/modules/seagulltags/classes/clas
 
 class CSeagullEvents extends CSeagullModule {
 	var $modx = null;
-	var $ph = array('ver'=>'0.0.7');
+	var $ph = array('ver'=>'0.0.9');
 	var $tables = array();
 	var $langs = array('ru'=>'Русская версия', 'ua'=>'Украинская версия', 'en'=>'Английская версия');
 	var $nameMonth = array(1=>'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь');
@@ -123,6 +125,13 @@ class CSeagullEvents extends CSeagullModule {
 					'form_fieldParam'=>'class="b-timepicker" style="width:50px"',
 					'form_mysql_mask'=>'DATE_FORMAT(`time_end`, "%H:%i") `time_end`',
 					'table_theadParam'=>'style="width:55px"'
+					);
+
+		$columns['link'] =	array(
+					'title'=>'Ссылка',
+					'form_fieldType'=>'input',
+					'form_fieldParam'=>'style="width:50%;min-width:400px;"',
+					'table_hidden'=>true
 					);
 
 		$columns['title'] =	array(
@@ -557,19 +566,17 @@ class CSeagullEvents extends CSeagullModule {
 		if (isset($date)) {
 			$date_begin = mktime(0,0,0, $date['month'], $date['day'], $date['year']);
 			$date_end = $date_begin+86400;
-			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_begin`>=$date_begin AND `date_begin`<=$date_end ORDER BY `date_begin` DESC LIMIT $count");
-			// echo 'SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_begin`>=$date_begin AND `date_begin`<=$date_end ORDER BY `date_begin` DESC LIMIT $count";
+			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, `link`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' AND `date_begin`>=$date_begin AND `date_begin`<=$date_end ORDER BY `date_begin` DESC LIMIT $count");
 		} else
-			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' ORDER BY `date_begin` DESC LIMIT $count");
-		// echo 'SELECT '.$select.', `tags`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `type`='$type' AND `published`='1' ORDER BY `date_begin` DESC LIMIT $count";
-		// ea($arr);
+			$arr = sql2table('SELECT '.$select.', `id`, `tags`, `type`, `link`, FROM_UNIXTIME(`date_begin`, "%d.%m.%Y") `date_begin`, FROM_UNIXTIME(`date_end`, "%d.%m.%Y") `date_end` FROM '.$this->tables['events']->table.$table_i18n." WHERE $where `published`='1' ORDER BY `date_begin` DESC LIMIT $count");
+
 		if ($arr) {
 			if ($this->config->allow_tags) {
 				$this->tags = new CSeagullTags($this->msg);
 			}
 
 			foreach ($arr as $item) {
-				$item['url'] = '/'.self::$url.$item['url'];
+				$item['url'] = $item['link'] ? $item['link'] : '/'.self::$url.$item['url'];
 				$item['content'] = substr($item['content'], 0, strpos($item['content'], '<hr />'));
 				// $item['date'] = date('j', $item['date_begin']).' '.date('m', $item['date_begin']).' '.date('Y', $item['date_begin']);
 				// if ($item['date_end'])
