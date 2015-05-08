@@ -25,7 +25,7 @@ $(document).ready(function() {
 					msg.showAjax(data);
 
 				$('#t-events').children('tbody').html(data.tbody);
-//				$('ul.b-paginator-links').html(data.links);
+//				$('ul.paginator-links').html(data.links);
 				$('#btn-show-all').show();
 			},
 			error: function(data){
@@ -42,7 +42,7 @@ $(document).ready(function() {
 					msg.showAjax(data);
 
 				$('#t-events').children('tbody').html(data.tbody);
-				$('ul.b-paginator-links').html(data.links);
+				$('ul.paginator-links').html(data.links);
 			},
 			error: function(data){
 				msg.show('Ошибка при отправке запроса', 'error');
@@ -51,8 +51,8 @@ $(document).ready(function() {
 	});
 
 //	Постраничная навигация
-	$(document).on('click', 'a.b-paginator-link', function() {
-		if (!$(this).hasClass('b-paginator-link_disabled')) {
+	$(document).on('click', 'a.paginator-link', function() {
+		if (!$(this).hasClass('paginator-link_disabled')) {
 			var page = $(this).attr('href').replace('#page', '');
 
 			$.ajax({ type:'POST', url:ajaxurl, dataType:'json',
@@ -62,7 +62,7 @@ $(document).ready(function() {
 						msg.showAjax(data);
 
 					$('#t-events').children('tbody').html(data.tbody);
-					$('ul.b-paginator-links').html(data.links);
+					$('ul.paginator-links').html(data.links);
 				},
 				error: function(data){
 					msg.show('Ошибка при отправке запроса', 'error');
